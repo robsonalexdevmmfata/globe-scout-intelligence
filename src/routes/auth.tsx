@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { DEMO_ADMIN, isDemoCredentials, setDemoSession } from "@/lib/mock-auth";
 import { Logo } from "@/components/brand";
+import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -120,10 +121,10 @@ function AuthPage() {
             <h2 className="text-4xl font-semibold leading-tight">Encontre empresários brasileiros<br /><span className="text-brand">nos EUA e na Europa.</span></h2>
             <p className="mt-4 max-w-md text-muted-foreground">Prospecção B2B, enriquecimento e qualificação com IA, com origem dos dados registrada e conformidade com LGPD e GDPR.</p>
           </div>
-          <p className="text-xs text-muted-foreground">© {new Date().getFullYear()} Global Lead Intelligence</p>
+          <SiteFooter className="border-0 px-0 py-0 text-left" />
         </div>
       </div>
-      <div className="flex items-center justify-center p-6">
+      <div className="flex flex-col items-center justify-center p-6">
         <div className="w-full max-w-sm">
           <div className="mb-8 lg:hidden"><Logo /></div>
           {mode === "forgot" ? (
@@ -168,6 +169,7 @@ function AuthPage() {
               </div>
             </Tabs>
           )}
+          <SiteFooter className="mt-8 border-0 lg:hidden" />
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Brain, Globe2, Radar, ShieldCheck, Sparkles, Target } from "lucide-react";
+import { ArrowRight, Brain, Radar, ShieldCheck, Sparkles, Target } from "lucide-react";
 import { Logo } from "@/components/brand";
+import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -59,9 +60,7 @@ function Landing() {
           </div>
         ))}
       </section>
-      <footer className="relative border-t py-6 text-center text-xs text-muted-foreground">
-        <Globe2 className="mx-auto mb-2 h-4 w-4" /> Global Lead Intelligence
-      </footer>
+      <SiteFooter className="relative" />
     </div>
   );
 }

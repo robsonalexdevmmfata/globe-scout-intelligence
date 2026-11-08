@@ -7,6 +7,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { clearDemoSession, isDemoAuthed } from "@/lib/mock-auth";
 import { Logo } from "@/components/brand";
+import { SiteFooter } from "@/components/site-footer";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
@@ -88,6 +89,7 @@ function AppShell() {
           <Logo />
         </header>
         <main className="mx-auto max-w-[1400px] p-4 md:p-8"><Outlet /></main>
+        <SiteFooter />
       </div>
     </div>
   );
