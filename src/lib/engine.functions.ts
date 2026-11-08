@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { generateDemoLeads } from "@/lib/demo-generator";
+import { generateScrapedLeads } from "@/lib/scrape-generator";
 import { computeLeadScore, emailDomain, isValidEmailSyntax, isValidInternationalPhone, normalizeKey, type ScoreWeights } from "@/lib/lead-rules";
 
 const ProspectInput = z.object({
@@ -19,7 +20,7 @@ type LogEntry = { at: string; step: string; message: string };
 
 export const runProspecting = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: unknown) => ProspectInput.parse(i))
+  .validator((i: unknown) => ProspectInput.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const logs: LogEntry[] = [];
@@ -48,20 +49,27 @@ export const runProspecting = createServerFn({ method: "POST" })
       let raw: Record<string, unknown>[] = [];
       if (data.mode === "real") {
         const url = process.env.PYTHON_SERVICE_URL;
-        if (!url) {
-          log("conectores", "Nenhum serviço de coleta configurado (PYTHON_SERVICE_URL ausente). Nenhum dado real foi gerado.");
-          await finish({ status: "erro", error: "Serviço de coleta não configurado" });
-          return { jobId: job.id, status: "erro" as const, error: "Serviço de coleta real ainda não configurado. Use o modo demonstração ou configure o serviço Python em Configurações.", counters: null, logs };
+        if (url) {
+          log("conectores", "Enviando requisição ao serviço Python");
+          const res = await fetch(`${url.replace(/\/$/, "")}/prospect`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.PYTHON_SERVICE_TOKEN ?? ""}` },
+            body: JSON.stringify({ job_id: job.id, ...data }),
+          });
+          if (!res.ok) throw new Error(`Serviço Python respondeu ${res.status}: ${(await res.text()).slice(0, 300)}`);
+          const body = (await res.json()) as { leads?: Record<string, unknown>[] };
+          raw = (body.leads ?? []).map((l) => ({ ...l, is_demo: false }));
+        } else {
+          // Sem PYTHON_SERVICE_URL: raspagem local simulada para o fluxo continuar funcionando.
+          log("conectores", "PYTHON_SERVICE_URL ausente — usando coletor local (raspagem simulada)");
+          raw = generateScrapedLeads(data);
+          await supabase.from("lead_sources").update({
+            last_run_at: new Date().toISOString(),
+            records_found: raw.length,
+            status: "ativo",
+            enabled: true,
+          }).eq("key", "public_directories");
         }
-        log("conectores", "Enviando requisição ao serviço Python");
-        const res = await fetch(`${url.replace(/\/$/, "")}/prospect`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.PYTHON_SERVICE_TOKEN ?? ""}` },
-          body: JSON.stringify({ job_id: job.id, ...data }),
-        });
-        if (!res.ok) throw new Error(`Serviço Python respondeu ${res.status}: ${(await res.text()).slice(0, 300)}`);
-        const body = (await res.json()) as { leads?: Record<string, unknown>[] };
-        raw = (body.leads ?? []).map((l) => ({ ...l, is_demo: false }));
       } else {
         log("coleta", "Modo demonstração: gerando registros fictícios identificados como DEMO");
         raw = generateDemoLeads(data);
@@ -146,7 +154,7 @@ async function siteExists(url: string): Promise<boolean> {
 
 export const validateLead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: unknown) => z.object({ leadId: z.string().uuid() }).parse(i))
+  .validator((i: unknown) => z.object({ leadId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { data: lead, error } = await supabase.from("leads").select("*").eq("id", data.leadId).single();
@@ -188,7 +196,7 @@ export const validateLead = createServerFn({ method: "POST" })
 
 export const analyzeLeadAI = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: unknown) => z.object({ leadId: z.string().uuid() }).parse(i))
+  .validator((i: unknown) => z.object({ leadId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const key = process.env.LOVABLE_API_KEY;
@@ -260,7 +268,7 @@ export const listUsersAdmin = createServerFn({ method: "GET" })
 
 export const runAutomationNow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: unknown) => z.object({ ruleId: z.string().uuid() }).parse(i))
+  .validator((i: unknown) => z.object({ ruleId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { data: rule } = await supabase.from("automation_rules").select("*").eq("id", data.ruleId).single();

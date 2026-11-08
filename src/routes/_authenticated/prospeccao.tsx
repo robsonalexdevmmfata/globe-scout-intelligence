@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, Circle, Loader2, Radar, X, AlertTriangle, FlaskConical } from "lucide-react";
-import { runProspecting } from "@/server/engine.functions";
+import { runProspecting } from "@/lib/engine.functions";
 import { CITY_SUGGESTIONS, COUNTRIES, EXTRA_FILTERS, SEGMENTS } from "@/lib/constants";
 import { PageHeader, Panel } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
@@ -124,8 +124,8 @@ function Prospeccao() {
                 </label>
                 <label className={cn("flex cursor-pointer gap-3 rounded-lg border p-3", mode === "real" && "border-primary/50 bg-primary/5")}>
                   <RadioGroupItem value="real" className="mt-0.5" />
-                  <div><div className="flex items-center gap-2 text-sm font-medium"><Radar className="h-4 w-4 text-primary" />Coleta real</div>
-                    <p className="text-xs text-muted-foreground">Usa os conectores configurados. Requer o serviço de coleta.</p></div>
+                  <div><div className="flex items-center gap-2 text-sm font-medium"><Radar className="h-4 w-4 text-primary" />Coleta real (raspagem)</div>
+                    <p className="text-xs text-muted-foreground">Usa o serviço Python se configurado; senão roda o coletor local simulado.</p></div>
                 </label>
               </RadioGroup>
               <div className="space-y-2"><Label htmlFor="qty">Quantidade desejada</Label>

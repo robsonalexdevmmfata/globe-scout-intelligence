@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { DEMO_ADMIN } from "@/lib/mock-auth";
 import { Logo } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,6 +80,45 @@ function AuthPage() {
     go();
   };
 
+  const fillDemoAdmin = () => {
+    setMode("login");
+    setEmail(DEMO_ADMIN.email);
+    setPassword(DEMO_ADMIN.password);
+  };
+
+  const loginAsDemoAdmin = async () => {
+    setMode("login");
+    setEmail(DEMO_ADMIN.email);
+    setPassword(DEMO_ADMIN.password);
+    setLoading(true);
+    try {
+      let { error } = await supabase.auth.signInWithPassword({
+        email: DEMO_ADMIN.email,
+        password: DEMO_ADMIN.password,
+      });
+      if (error) {
+        const signup = await supabase.auth.signUp({
+          email: DEMO_ADMIN.email,
+          password: DEMO_ADMIN.password,
+          options: { data: { full_name: DEMO_ADMIN.fullName } },
+        });
+        if (signup.error) throw signup.error;
+        if (!signup.data.session) {
+          ({ error } = await supabase.auth.signInWithPassword({
+            email: DEMO_ADMIN.email,
+            password: DEMO_ADMIN.password,
+          }));
+          if (error) throw new Error("Admin criado, mas precisa confirmar o e-mail no Supabase antes de entrar.");
+        }
+      }
+      go();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Falha no login demo");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="relative hidden overflow-hidden border-r bg-grid lg:block">
@@ -124,6 +164,17 @@ function AuthPage() {
               <button type="button" onClick={google} className="flex h-10 w-full items-center justify-center gap-2.5 rounded-md border border-[#8E918F] bg-[#131314] text-sm font-medium text-[#E3E3E3]">
                 <GoogleIcon /> Continuar com Google
               </button>
+              <div className="mt-4 rounded-lg border border-dashed border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
+                <p className="font-medium text-foreground">Acesso demo (admin)</p>
+                <p className="mt-1 break-all">{DEMO_ADMIN.email}</p>
+                <p>Senha: {DEMO_ADMIN.password}</p>
+                <div className="mt-2 flex gap-2">
+                  <Button type="button" variant="secondary" size="sm" className="h-8" onClick={fillDemoAdmin}>Preencher</Button>
+                  <Button type="button" size="sm" className="h-8 bg-brand" disabled={loading} onClick={loginAsDemoAdmin}>
+                    {loading && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}Entrar como admin
+                  </Button>
+                </div>
+              </div>
             </Tabs>
           )}
         </div>
