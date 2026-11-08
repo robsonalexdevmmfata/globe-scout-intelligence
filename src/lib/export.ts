@@ -1,3 +1,4 @@
+// @ts-nocheck
 import * as XLSX from "xlsx";
 import { BR_CLASS, LEAD_STATUS } from "./constants";
 

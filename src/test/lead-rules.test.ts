@@ -11,7 +11,7 @@ describe("lead rules", () => {
     expect(computeLeadScore({}).score).toBeGreaterThanOrEqual(0);
   });
   it("lead without Brazilian evidence gets no compatibility points", () => {
-    expect(computeLeadScore({ br_classification: "nao_identificado" }).breakdown.compatibilidade).toBe(0);
+    expect(computeLeadScore({ br_classification: "nao_identificado" }).breakdown["compatibilidade"]).toBe(0);
   });
   it("validates email syntax", () => {
     expect(isValidEmailSyntax("contato@empresa.com")).toBe(true);
