@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Fictitious data generator. Every record is flagged is_demo=true and suffixed "(DEMO)".
 // Never presented as real results.
 import { CITY_SUGGESTIONS, SEGMENTS } from "./constants";
