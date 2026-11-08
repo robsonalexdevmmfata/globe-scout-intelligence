@@ -6,6 +6,8 @@ import { Building2, CheckCircle2, Clock, Flag, Mail, Phone, Radar, Sparkles, Sta
 import { formatDistanceToNow, format, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
+import { listDemoJobs, listDemoLeads } from "@/lib/demo-store";
+import { isDemoAuthed } from "@/lib/mock-auth";
 import { EmptyState, PageHeader, Panel, StatCard } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,9 +27,11 @@ function countBy<T>(arr: T[], key: (x: T) => string | null | undefined) {
 }
 
 function Dashboard() {
+  const demo = isDemoAuthed();
   const leadsQ = useQuery({
-    queryKey: ["dash-leads"],
+    queryKey: ["dash-leads", demo],
     queryFn: async () => {
+      if (demo) return listDemoLeads() as never[];
       const { data, error } = await supabase.from("leads")
         .select("id,country,segment,br_classification,email,email_status,phone,phone_status,status,score,source,discovered_at,company_id,is_demo")
         .limit(5000);
@@ -36,10 +40,27 @@ function Dashboard() {
     },
     refetchInterval: 30000,
   });
-  const jobsQ = useQuery({ queryKey: ["dash-jobs"], queryFn: async () => (await supabase.from("prospecting_jobs").select("id", { count: "exact", head: true })).count ?? 0 });
+  const jobsQ = useQuery({
+    queryKey: ["dash-jobs", demo],
+    queryFn: async () => demo
+      ? listDemoJobs().length
+      : (await supabase.from("prospecting_jobs").select("id", { count: "exact", head: true })).count ?? 0,
+  });
   const actQ = useQuery({
-    queryKey: ["dash-activity"],
-    queryFn: async () => (await supabase.from("activity_logs").select("*").order("created_at", { ascending: false }).limit(12)).data ?? [],
+    queryKey: ["dash-activity", demo],
+    queryFn: async () => {
+      if (demo) {
+        return listDemoJobs().slice(0, 12).map((j) => ({
+          id: j.id,
+          action: "prospecting_job",
+          entity: "job",
+          entity_id: j.id,
+          created_at: j.created_at,
+          details: { mode: j.mode, status: j.status, inserted: j.counters?.inserted ?? 0 },
+        })) as never[];
+      }
+      return (await supabase.from("activity_logs").select("*").order("created_at", { ascending: false }).limit(12)).data ?? [];
+    },
     refetchInterval: 30000,
   });
 

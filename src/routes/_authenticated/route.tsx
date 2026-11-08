@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Radar, Users, PlugZap, Workflow, ShieldCheck, Settings, UserCog, LogOut, Menu, History, Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { clearDemoSession, isDemoAuthed } from "@/lib/mock-auth";
 import { Logo } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async ({ location }) => {
+    if (isDemoAuthed()) return;
     const { data } = await supabase.auth.getUser();
     if (!data.user) throw redirect({ to: "/auth", search: { redirect: location.href } });
   },
@@ -40,6 +42,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const signOut = async () => {
     await qc.cancelQueries();
     qc.clear();
+    clearDemoSession();
     await supabase.auth.signOut();
     navigate({ to: "/auth", search: { redirect: undefined }, replace: true });
   };

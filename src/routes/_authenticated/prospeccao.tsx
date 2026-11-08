@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, Circle, Loader2, Radar, X, AlertTriangle, FlaskConical } from "lucide-react";
 import { runProspecting } from "@/lib/engine.functions";
+import { runLocalProspecting } from "@/lib/demo-store";
+import { isDemoAuthed } from "@/lib/mock-auth";
 import { CITY_SUGGESTIONS, COUNTRIES, EXTRA_FILTERS, SEGMENTS } from "@/lib/constants";
 import { PageHeader, Panel } from "@/components/ui-kit";
 import { Button } from "@/components/ui/button";
@@ -57,7 +59,11 @@ function Prospeccao() {
   const addCity = (c: string) => { const v = c.trim(); if (v && !cities.includes(v)) setCities([...cities, v]); setCityInput(""); };
 
   const m = useMutation({
-    mutationFn: () => run({ data: { countries, cities, segments, filters, quantity, mode, saveAsConfig: configName || undefined } }),
+    mutationFn: async () => {
+      const payload = { countries, cities, segments, filters, quantity, mode, saveAsConfig: configName || undefined };
+      if (isDemoAuthed()) return runLocalProspecting(payload);
+      return run({ data: payload });
+    },
     onSuccess: (r) => {
       if (r.status === "erro") toast.error(r.error ?? "Falha na prospecção");
       else toast.success(`${r.counters?.inserted ?? 0} leads adicionados`);

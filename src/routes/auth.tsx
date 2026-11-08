@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
-import { DEMO_ADMIN } from "@/lib/mock-auth";
+import { DEMO_ADMIN, isDemoCredentials, setDemoSession } from "@/lib/mock-auth";
 import { Logo } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,10 +53,20 @@ function AuthPage() {
     setLoading(true);
     try {
       if (mode === "login") {
+        if (isDemoCredentials(email, password)) {
+          setDemoSession();
+          go();
+          return;
+        }
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         go();
       } else if (mode === "signup") {
+        if (isDemoCredentials(email, password)) {
+          setDemoSession();
+          go();
+          return;
+        }
         const { data, error } = await supabase.auth.signUp({
           email, password, options: { emailRedirectTo: window.location.origin + "/dashboard", data: { full_name: name } },
         });
@@ -92,28 +102,9 @@ function AuthPage() {
     setPassword(DEMO_ADMIN.password);
     setLoading(true);
     try {
-      let { error } = await supabase.auth.signInWithPassword({
-        email: DEMO_ADMIN.email,
-        password: DEMO_ADMIN.password,
-      });
-      if (error) {
-        const signup = await supabase.auth.signUp({
-          email: DEMO_ADMIN.email,
-          password: DEMO_ADMIN.password,
-          options: { data: { full_name: DEMO_ADMIN.fullName } },
-        });
-        if (signup.error) throw signup.error;
-        if (!signup.data.session) {
-          ({ error } = await supabase.auth.signInWithPassword({
-            email: DEMO_ADMIN.email,
-            password: DEMO_ADMIN.password,
-          }));
-          if (error) throw new Error("Admin criado, mas precisa confirmar o e-mail no Supabase antes de entrar.");
-        }
-      }
+      // Sessão local — zero Supabase
+      setDemoSession();
       go();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Falha no login demo");
     } finally {
       setLoading(false);
     }
@@ -165,8 +156,8 @@ function AuthPage() {
                 <GoogleIcon /> Continuar com Google
               </button>
               <div className="mt-4 rounded-lg border border-dashed border-primary/30 bg-primary/5 p-3 text-xs text-muted-foreground">
-                <p className="font-medium text-foreground">Acesso demo (admin)</p>
-                <p className="mt-1 break-all">{DEMO_ADMIN.email}</p>
+                <p className="font-medium text-foreground">Acesso demo local (sem Supabase)</p>
+                <p className="mt-1">E-mail: {DEMO_ADMIN.email} (ou só <strong>admin</strong>)</p>
                 <p>Senha: {DEMO_ADMIN.password}</p>
                 <div className="mt-2 flex gap-2">
                   <Button type="button" variant="secondary" size="sm" className="h-8" onClick={fillDemoAdmin}>Preencher</Button>
